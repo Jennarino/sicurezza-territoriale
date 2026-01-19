@@ -14,27 +14,36 @@ st.set_page_config(page_title="Intelligence MI-MB", layout="wide", page_icon="ðŸ
 
 # --- MOTORE DI RICERCA OSINT ---
 def esegui_scansione_osint(comune, provincia):
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    # Archivio statico delle autoritÃ  per MI e MB (Intelligence Istituzionale)
+    database_istituzionale = {
+        "Milano": {
+            "prefettura": "https://www.prefettura.it/milano/multidip/index.htm",
+            "questura": "https://questure.poliziadistato.it/Milano",
+            "opendata": f"https://dati.comune.milano.it/dataset?q={comune}"
+        },
+        "Monza e della Brianza": {
+            "prefettura": "https://www.prefettura.it/monza/multidip/index.htm",
+            "questura": "https://questure.poliziadistato.it/Monzaebrianza",
+            "opendata": "https://dati.comune.monza.it/dataset"
+        }
+    }
+
     risultati = []
-    # Query limitata per evitare blocchi Google
-    queries = [f'site:prefettura.interno.gov.it "{comune}" sicurezza']
     
-    for q in queries:
-        try:
-            url = f"https://www.google.com/search?q={urllib.parse.quote(q)}"
-            resp = requests.get(url, headers=headers, timeout=5)
-            if resp.status_code == 200:
-                soup = BeautifulSoup(resp.text, 'html.parser')
-                # Cerchiamo i link nei risultati di Google
-                for link in soup.find_all('a'):
-                    href = link.get('href')
-                    if href and "url?q=" in href:
-                        clean_url = href.split("url?q=")[1].split("&sa=")[0]
-                        if "google.com" not in clean_url:
-                            risultati.append({"titolo": "Fonte Istituzionale", "link": clean_url})
-                            if len(risultati) >= 3: break # Limitiamo i risultati
-        except:
-            continue
+    # Seleziona i link corretti in base alla provincia
+    prov_key = "Milano" if "Milano" in provincia else "Monza e della Brianza"
+    fonti = database_istituzionale.get(prov_key, {})
+
+    if fonti:
+        risultati.append({"titolo": f"Prefettura di {prov_key} - Ordine Pubblico", "link": fonti["prefettura"]})
+        risultati.append({"titolo": f"Questura di {prov_key} - Ultime Notizie", "link": fonti["questura"]})
+        
+    # Aggiungi una ricerca mirata su Albo Pretorio (Fonte Certificata)
+    risultati.append({
+        "titolo": f"Albo Pretorio Comune di {comune} (Sicurezza Urbana)",
+        "link": f"https://www.google.com/search?q=site:comune.{comune.lower()}.mi.it+ordinanza+sicurezza"
+    })
+
     return risultati
 
 # --- GENERATORE REPORT PDF ---
