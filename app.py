@@ -136,13 +136,20 @@ if st.session_state.final_data:
 
     st.divider()
     st.subheader("Dettagli Semantici Rilevati")
+    
+    # Se i risultati vettoriali esistono, mostrali
     if v:
         for res in v:
             st.info(f"**{res['titolo']}** - Score: {res['score']}")
     else:
-        st.warning("Database vettoriale non ancora popolato per questa specifica sotto-area.")    if fonti:
-        risultati.append({"titolo": f"Prefettura di {prov_key} - Ordine Pubblico", "link": fonti["prefettura"]})
-        risultati.append({"titolo": f"Questura di {prov_key} - Ultime Notizie", "link": fonti["questura"]})
+        st.warning("Database vettoriale non ancora popolato per questa specifica sotto-area.")
+
+    # Se hai una sezione per le fonti istituzionali (il vecchio 'fonti' o 'risultati_osint')
+    # Assicurati che sia staccata e indentata correttamente
+    if 'osint_ricerca' in st.session_state and st.session_state.osint_ricerca:
+        st.subheader("Fonti Istituzionali")
+        for r in st.session_state.osint_ricerca:
+            st.markdown(f"🔗 [Link Istituzionale]({r['link']})")
         
     # Aggiungi una ricerca mirata su Albo Pretorio (Fonte Certificata)
     risultati.append({
