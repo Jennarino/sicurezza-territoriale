@@ -8,7 +8,7 @@ Original file is located at
 """
 
 # Installazione librerie necessarie
-!pip install geopy folium fpdf2 requests beautifulsoup4
+
 
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
