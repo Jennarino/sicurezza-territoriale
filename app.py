@@ -77,21 +77,24 @@ def crea_pdf_intelligence(dati, osint):
     # OUTPUT IN BYTES (Soluzione al problema della pagina bianca)
     return bytes(pdf.output())
 
+
 # --- INTERFACCIA STREAMLIT ---
 st.title("🛡️ Intelligence Sicurezza Territoriale")
 st.markdown("### Focus Province: Milano e Monza-Brianza")
 
-# Usiamo lo stato della sessione per evitare che la pagina si resetti
-if 'analizzato' not in st.session_state:
-    st.session_state.analizzato = False
+# 1. Inizializzazione della memoria (Session State)
+if 'dati_ricerca' not in st.session_state:
+    st.session_state.dati_ricerca = None
+if 'osint_ricerca' not in st.session_state:
+    st.session_state.osint_ricerca = None
 
 with st.sidebar:
     st.header("Ricerca Target")
     indirizzo_input = st.text_input("Inserisci Indirizzo e Comune:", "Piazza del Duomo, Milano")
     pulsante = st.button("ESEGUI ANALISI")
 
+# 2. Logica di esecuzione (solo al click del pulsante)
 if pulsante:
-    st.session_state.analizzato = True
     with st.spinner("Accesso ai database territoriali..."):
         geolocator = Nominatim(user_agent=f"intel_agent_{int(time.time())}")
         location = geolocator.geocode(indirizzo_input, addressdetails=True, timeout=10)
@@ -102,49 +105,56 @@ if pulsante:
             provincia = info.get('county', '')
 
             if any(p in provincia for p in ["Milano", "Monza"]):
-                dati_finali = {
+                # Salviamo tutto in session_state per non perdere i dati al ricaricamento
+                st.session_state.dati_ricerca = {
                     "indirizzo": indirizzo_input, "comune": comune, "provincia": provincia,
                     "lat": location.latitude, "lon": location.longitude
                 }
-                
-                # Esecuzione Scansione
-                risultati_osint = esegui_scansione_osint(comune, provincia)
-                
-                # Layout
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.subheader(f"Mappa Tattica - {comune}")
-                    m = folium.Map(location=[location.latitude, location.longitude], zoom_start=15)
-                    folium.Marker([location.latitude, location.longitude], tooltip="Target").add_to(m)
-                    st_folium(m, width="100%", height=400, key="map")
-                
-                with col2:
-                    st.subheader("Dati Dossier")
-                    st.write(f"**Target:** {comune}")
-                    st.write(f"**Provincia:** {provincia}")
-                    
-                    # Generazione PDF
-                    try:
-                        pdf_bytes = crea_pdf_intelligence(dati_finali, risultati_osint)
-                        st.download_button(
-                            label="📥 SCARICA REPORT (PDF)",
-                            data=pdf_bytes,
-                            file_name=f"Report_{comune}.pdf",
-                            mime="application/pdf",
-                            key="download"
-                        )
-                    except Exception as e:
-                        st.error(f"Errore PDF: {e}")
-                
-                st.divider()
-                st.subheader("Fonti OSINT individuate")
-                if risultati_osint:
-                    for r in risultati_osint:
-                        st.markdown(f"🔗 [Link Istituzionale]({r['link']})")
-                else:
-                    st.write("Nessun link istituzionale trovato per questo comune.")
+                st.session_state.osint_ricerca = esegui_scansione_osint(comune, provincia)
             else:
                 st.error("Il sistema opera esclusivamente sulle province di Milano e Monza Brianza.")
+                st.session_state.dati_ricerca = None
         else:
-            st.error("Indirizzo non trovato. Riprova con più dettagli.")
+            st.error("Indirizzo non trovato.")
+            st.session_state.dati_ricerca = None
+
+# 3. Visualizzazione dei risultati (persiste grazie alla memoria)
+if st.session_state.dati_ricerca:
+    d = st.session_state.dati_ricerca
+    o = st.session_state.osint_ricerca
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader(f"Mappa Tattica - {d['comune']}")
+        # Creazione mappa
+        m = folium.Map(location=[d['lat'], d['lon']], zoom_start=15)
+        folium.Marker([d['lat'], d['lon']], tooltip="Target").add_to(m)
+        # Visualizzazione mappa con chiave fissa per evitare reset
+        st_folium(m, width="100%", height=400, key="mappa_fissa")
+    
+    with col2:
+        st.subheader("Dati Dossier")
+        st.write(f"**Comune:** {d['comune']}")
+        st.write(f"**Provincia:** {d['provincia']}")
+        
+        # Generazione PDF dai dati in memoria
+        try:
+            pdf_bytes = crea_pdf_intelligence(d, o)
+            st.download_button(
+                label="📥 SCARICA REPORT (PDF)",
+                data=pdf_bytes,
+                file_name=f"Report_{d['comune']}.pdf",
+                mime="application/pdf",
+                key="btn_pdf" # Chiave fissa fondamentale
+            )
+        except Exception as e:
+            st.error(f"Errore PDF: {e}")
+    
+    st.divider()
+    st.subheader("Fonti OSINT individuate")
+    if o:
+        for r in o:
+            st.markdown(f"🔗 [Link Istituzionale]({r['link']})")
+    else:
+        st.write("Nessun link istituzionale trovato in questa sessione.")
