@@ -14,15 +14,9 @@ st.set_page_config(page_title="Intelligence Territoriale MI-MB", layout="wide", 
 
 # --- MOTORE DI RICERCA OSINT ---
 def esegui_scansione_osint(comune, provincia):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0'}
     risultati = []
-    
-    # Query mirate per sicurezza e ordine pubblico
-    queries = [
-        f'site:prefettura.interno.gov.it "{comune}" sicurezza',
-        f'site:questure.poliziadistato.it "{comune}" controlli',
-        f'"{comune}" cronaca nera sicurezza 2025'
-    ]
+    queries = [f'site:prefettura.interno.gov.it "{comune}" sicurezza']
     
     for q in queries:
         try:
@@ -30,15 +24,16 @@ def esegui_scansione_osint(comune, provincia):
             resp = requests.get(url, headers=headers, timeout=5)
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, 'html.parser')
-                for g in soup.find_all('div', class_='tF2Cxc')[:2]: # Prendi i primi 2 da ogni query
-                    titolo = g.find('h3').text if g.find('h3') else "Dettaglio Fonte"
-                    link = g.find('a')['href'] if g.find('a') else ""
-                    risultati.append({"titolo": titolo, "link": link})
-            time.sleep(1) # Delay anti-blocco
+                # Logica di estrazione semplificata
+                links = soup.find_all('a')
+                for link in links[:3]:
+                    href = link.get('href')
+                    if href and "url?q=" in href:
+                        clean_url = href.split("url?q=")[1].split("&sa=")[0]
+                        risultati.append({"titolo": "Fonte Istituzionale", "link": clean_url})
         except:
-            pass
+            continue
     return risultati
-
 # --- GENERATORE REPORT PDF ---
 class IntelligencePDF(FPDF):
     def header(self):
