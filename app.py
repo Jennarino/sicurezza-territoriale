@@ -89,7 +89,8 @@ def crea_pdf_intelligence(dati, osint):
                    "Si riscontra una presenza strutturata di forze dell'ordine e sistemi di controllo urbano.")
     pdf.multi_cell(0, 8, valutazione)
 
-    return bytes(pdf.output())
+    pdf_bytes = pdf.output() 
+    return bytes(pdf_bytes)
 
 # --- INTERFACCIA STREAMLIT ---
 st.title("🛡️ Intelligence Sicurezza Territoriale")
@@ -135,10 +136,13 @@ if pulsante:
                     st.write(f"**Target:** {comune}")
                     st.write(f"**Provincia:** {provincia}")
                     
-                    pdf_output = crea_pdf_intelligence(dati_finali, risultati_osint)
+                    # Chiama la funzione e ottieni i byte
+                    pdf_data = crea_pdf_intelligence(dati_finali, risultati_osint)
+                    
+                    # Passa i byte direttamente al pulsante
                     st.download_button(
                         label="📥 SCARICA REPORT (PDF)",
-                        data=pdf_output,
+                        data=pdf_data,
                         file_name=f"Report_{comune}.pdf",
                         mime="application/pdf"
                     )
