@@ -273,3 +273,7 @@ if st.session_state.dati_ricerca:
             st.markdown(f"🔗 [Link Istituzionale]({r['link']})")
     else:
         st.write("Nessun link istituzionale trovato in questa sessione.")
+if "gcp_service_account" in st.secrets:
+    st.sidebar.success("✅ Credenziali caricate correttamente!")
+else:
+    st.sidebar.error("❌ Credenziali non trovate nei Secrets.")
