@@ -89,7 +89,7 @@ def crea_pdf_intelligence(dati, osint):
                    "Si riscontra una presenza strutturata di forze dell'ordine e sistemi di controllo urbano.")
     pdf.multi_cell(0, 8, valutazione)
 
-    return pdf.output(dest='S').encode('latin-1', 'ignore')
+    return bytes(pdf.output())
 
 # --- INTERFACCIA STREAMLIT ---
 st.title("🛡️ Intelligence Sicurezza Territoriale")
