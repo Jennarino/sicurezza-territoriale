@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 import time
+import io
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Intelligence MI-MB", layout="wide", page_icon="🛡️")
@@ -47,12 +48,11 @@ def crea_pdf_intelligence(dati, osint):
     pdf = IntelligencePDF()
     pdf.add_page()
     
-    # Titolo principale
+    # Intestazione e Titolo
     pdf.set_font("Helvetica", "B", 20)
-    pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 15, f"ANALISI SICUREZZA: {dati['comune'].upper()}", ln=True)
     pdf.set_font("Helvetica", "I", 10)
-    pdf.cell(0, 5, f"Generato il: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+    pdf.cell(0, 5, f"Data: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
     pdf.ln(10)
 
     # Blocco 1: Localizzazione
@@ -66,18 +66,14 @@ def crea_pdf_intelligence(dati, osint):
     # Blocco 2: Riscontri OSINT
     pdf.ln(5)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 10, " 2. RISCONTRI DA FONTI APERTE", ln=True, fill=True)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.ln(2)
+    pdf.cell(0, 10, " 2. RISCONTRI OSINT", ln=True, fill=True)
+    pdf.set_font("Helvetica", "", 10)
     if osint:
         for item in osint:
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.multi_cell(0, 7, f"- {item['titolo']}")
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(0, 5, f"  Fonte: {item['link'][:70]}...", ln=True)
+            pdf.multi_cell(0, 6, f"- {item['titolo']}\n  Link: {item['link'][:60]}...")
             pdf.ln(2)
     else:
-        pdf.cell(0, 10, "Nessun dato critico rilevato nelle scansioni rapide.", ln=True)
+        pdf.cell(0, 10, "Nessun dato critico rilevato.", ln=True)
 
     # Blocco 3: Valutazione
     pdf.ln(5)
@@ -89,8 +85,7 @@ def crea_pdf_intelligence(dati, osint):
                    "Si riscontra una presenza strutturata di forze dell'ordine e sistemi di controllo urbano.")
     pdf.multi_cell(0, 8, valutazione)
 
-    pdf_bytes = pdf.output() 
-    return bytes(pdf_bytes)
+    return pdf.output()
 
 # --- INTERFACCIA STREAMLIT ---
 st.title("🛡️ Intelligence Sicurezza Territoriale")
